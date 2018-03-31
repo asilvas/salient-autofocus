@@ -49,3 +49,19 @@ const region = autoFocus.getRegionFromMeta(salientMeta, { imageWidth: 1024, imag
 
 That's out of the scope of this project as there are *many* models for generating salient maps based on TONS of research. However you're in luck,
 because I just happen to author one of those solutions: https://github.com/asilvas/salient-maps
+
+
+
+## Example Results
+
+The following examples are visual representations of the original image side by side with the salient map,
+overlayed by the regions of saliency density to illustrate where **salient-autofocus** will focus on
+depending on the available size of the region requested. The more accurate the saliency map, the better
+**salient-autofocus** will perform.
+
+![](./docs/images/salient1.jpg)
+![](./docs/images/salient2.jpg)
+![](./docs/images/salient3.jpg)
+![](./docs/images/salient4.jpg)
+![](./docs/images/salient5.jpg)
+![](./docs/images/salient6.jpg)
