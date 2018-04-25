@@ -1,6 +1,6 @@
 const VERSION = 1;
 const GRAVITY_SORT_DISTANCE_WEIGHT = 1.0;
-const GRAVITY_SORT_SALIENT_WEIGHT = 1.5;
+const GRAVITY_SORT_SALIENT_WEIGHT = 1.75;
 
 function getMetaFromSalientMatrix(salientData) {
   const rows = salientData.length;
@@ -64,24 +64,18 @@ function getMetaFromSalientMatrix(salientData) {
   let top = gravity.row;
   let bottom = gravity.row;
   
-  let width, height, regionRatio, r25th, r50th, r75th, r90th;
+  let width, height, regionRatio, region, r25th, r40th, r50th, r75th, r90th;
   do {
     width = right - left + 1;
     height = bottom - top + 1;
   
     regionRatio = regionSum / sum;
-    if (!r25th && regionRatio >= 0.25) {
-      r25th = { l: +(left/gridCols).toFixed(4), t: +(top/gridRows).toFixed(4), w: +(width/gridCols).toFixed(4), h: +(height/gridRows).toFixed(4) };
-    }  
-    if (!r50th && regionRatio >= 0.5) {
-      r50th = { l: +(left/gridCols).toFixed(4), t: +(top/gridRows).toFixed(4), w: +(width/gridCols).toFixed(4), h: +(height/gridRows).toFixed(4) };
-    }  
-    if (!r75th && regionRatio >= 0.75) {
-      r75th = { l: +(left/gridCols).toFixed(4), t: +(top/gridRows).toFixed(4), w: +(width/gridCols).toFixed(4), h: +(height/gridRows).toFixed(4) };
-    }  
-    if (!r90th && regionRatio >= 0.9) {
-      r90th = { l: +(left/gridCols).toFixed(4), t: +(top/gridRows).toFixed(4), w: +(width/gridCols).toFixed(4), h: +(height/gridRows).toFixed(4) };
-    }
+    region = { l: +(left/gridCols).toFixed(4), t: +(top/gridRows).toFixed(4), w: +(width/gridCols).toFixed(4), h: +(height/gridRows).toFixed(4) };
+    if (!r25th && regionRatio >= 0.25) r25th = region;
+    if (!r40th && regionRatio >= 0.4) r40th = region;
+    if (!r50th && regionRatio >= 0.5) r50th = region;  
+    if (!r75th && regionRatio >= 0.75) r75th = region;  
+    if (!r90th && regionRatio >= 0.9) r90th = region;
 
     let moved = false;
 
@@ -117,6 +111,7 @@ function getMetaFromSalientMatrix(salientData) {
       y: +(center[1]).toFixed(4)
     },
     r25th,
+    r40th,
     r50th,
     r75th,
     r90th

@@ -1,4 +1,4 @@
-function getRegionFromMeta({ v, /*c, */r25th, r50th, r75th, r90th }, { imageWidth, imageHeight, regionWidth, regionHeight }) {
+function getRegionFromMeta({ v, /*c, */r25th, r40th, r50th, r75th, r90th } = {}, { imageWidth, imageHeight, regionWidth, regionHeight }) {
   if (v !== 1) throw new Error('v:1 required');
   if (!imageWidth) throw new Error('`imageWidth` required');
   if (!imageHeight) throw new Error('`imageHeight` required');
@@ -12,6 +12,8 @@ function getRegionFromMeta({ v, /*c, */r25th, r50th, r75th, r90th }, { imageWidt
   if (r75th) region = autoFocusFromSaliency(r75th, { imageWidth, imageHeight, regionWidth, regionHeight, bestEffort: false });
   if (region) return region; // perfect match for 75th percentile!
   if (r50th) region = autoFocusFromSaliency(r50th, { imageWidth, imageHeight, regionWidth, regionHeight, bestEffort: false });
+  if (region) return region; // perfect match for 50th percentile!
+  if (r40th) region = autoFocusFromSaliency(r40th, { imageWidth, imageHeight, regionWidth, regionHeight, bestEffort: false });
   if (region) return region; // perfect match for 50th percentile!
   if (r25th) region = autoFocusFromSaliency(r25th, { imageWidth, imageHeight, regionWidth, regionHeight, bestEffort: true });
   if (region) return region; // region 25th percentile regardless if perfect match or not, we used our best effort
