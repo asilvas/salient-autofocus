@@ -36,8 +36,6 @@ function getMetaFromSalientMatrix(salientData) {
 
   // first gravity point will be our center
   let gravity = gravityArr.pop();
-  let regionSum = gravity.sum;
-
   if (!gravity) {
     // if no gravity, return default center/center
     return {
@@ -60,6 +58,7 @@ function getMetaFromSalientMatrix(salientData) {
   };
   gravityArr.sort(gravitySorter);
 
+  let regionSum = gravity.sum;
   let left = gravity.col;
   let right = gravity.col;
   let top = gravity.row;
