@@ -7,15 +7,17 @@ function getRegionFromMeta({ v, /*c, */r25th, r50th, r75th, r90th }, { imageWidt
 
   let region;
 
-  region = autoFocusFromSaliency(r90th, { imageWidth, imageHeight, regionWidth, regionHeight, bestEffort: false });
+  if (r90th) region = autoFocusFromSaliency(r90th, { imageWidth, imageHeight, regionWidth, regionHeight, bestEffort: false });
   if (region) return region; // perfect match for 90th percentile!
-  region = autoFocusFromSaliency(r75th, { imageWidth, imageHeight, regionWidth, regionHeight, bestEffort: false });
+  if (r75th) region = autoFocusFromSaliency(r75th, { imageWidth, imageHeight, regionWidth, regionHeight, bestEffort: false });
   if (region) return region; // perfect match for 75th percentile!
-  region = autoFocusFromSaliency(r50th, { imageWidth, imageHeight, regionWidth, regionHeight, bestEffort: false });
+  if (r50th) region = autoFocusFromSaliency(r50th, { imageWidth, imageHeight, regionWidth, regionHeight, bestEffort: false });
   if (region) return region; // perfect match for 50th percentile!
-  region = autoFocusFromSaliency(r25th, { imageWidth, imageHeight, regionWidth, regionHeight, bestEffort: true });
+  if (r25th) region = autoFocusFromSaliency(r25th, { imageWidth, imageHeight, regionWidth, regionHeight, bestEffort: true });
+  if (region) return region; // region 25th percentile regardless if perfect match or not, we used our best effort
 
-  return region; // region 25th percentile regardless if perfect match or not, we used our best effort
+  // if we get this far, there is no saliency, and we simply want to default to center/center
+  return autoFocusFromSaliency({ l: 0.5, t: 0.5, w: 0, h: 0 }, { imageWidth, imageHeight, regionWidth, regionHeight, bestEffort: true });
 }
 
 function autoFocusFromSaliency({ l, t, w, h }, { imageWidth, imageHeight, regionWidth, regionHeight, bestEffort }) {

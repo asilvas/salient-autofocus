@@ -37,6 +37,17 @@ function getMetaFromSalientMatrix(salientData) {
   // first gravity point will be our center
   let gravity = gravityArr.pop();
   let regionSum = gravity.sum;
+
+  if (!gravity) {
+    // if no gravity, return default center/center
+    return {
+      v: VERSION,
+      c: {
+        x: 0.5,
+        y: 0.5
+      }
+    };
+  }
   
   // re-sort based on both the saliency and distance from starting point
   const gravitySorter = (a, b) => {
