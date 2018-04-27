@@ -49,10 +49,20 @@ function autoFocusFromSaliency({ l, t, w, h }, { imageWidth, imageHeight, region
   const centerY = topPx + Math.round(heightPx / 2);
 
   // place region in center of saliency
-  const left = Math.max(centerX - Math.round(finalRegionWidth / 2), 0); // do not allow negative
-  const top = Math.max(centerY - Math.round(finalRegionHeight / 2), 0); // do not allow negative
-  const right = Math.min(left + finalRegionWidth - 1, imageWidth-1); // cap width
-  const bottom = Math.min(top + finalRegionHeight - 1, imageHeight-1); // cap height
+  let left = Math.max(centerX - Math.round(finalRegionWidth / 2), 0); // do not allow negative
+  let top = Math.max(centerY - Math.round(finalRegionHeight / 2), 0); // do not allow negative
+  let right = left + finalRegionWidth - 1;
+  if (right >= imageWidth) {
+    right = imageWidth - 1;
+    left = Math.max(right - (finalRegionWidth - 1), 0); // do not allow negative
+  }
+  let bottom = top + finalRegionHeight - 1;
+  if (bottom >= imageHeight) {
+    bottom = imageHeight - 1;
+    top = Math.max(bottom - (finalRegionHeight - 1), 0); // do not allow negative
+  }
+  right = Math.min(right, imageWidth-1); // cap width
+  bottom = Math.min(bottom, imageHeight-1); // cap height
   const width = right - left + 1; // calc final width
   const height = bottom - top + 1; // calc final height
 

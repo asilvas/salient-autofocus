@@ -85,6 +85,33 @@ describe('#get-region-from-meta', () => {
       "width": 410
     });
   });
+
+  it('shift if region exceeds image size', () => {
+    meta = {
+      v: 1,
+      c: [0.5, 0.5],
+      r25th: { l: 0.95, t: 0.95, w: 0.1, h: 0.1 },
+      r50th: { l: 0.95, t: 0.95, w: 0.2, h: 0.2 },
+      r75th: { l: 0.95, t: 0.95, w: 0.3, h: 0.3 },
+      r90th: { l: 0.95, t: 0.95, w: 0.5, h: 0.5 }
+    };
+    let err, result;
+    try {
+      result = main();
+    } catch (ex) {
+      err = ex;
+    }
+
+    expect(err).to.not.exist;
+    expect(result).to.deep.equal({
+      "bottom": 767,
+      "height": 480,
+      "left": 384,
+      "right": 1023,
+      "top": 288,
+      "width": 640
+    });
+  });
   
   describe('#regions', () => {
 
