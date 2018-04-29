@@ -59,9 +59,9 @@ overlayed by the regions of saliency density to illustrate where **salient-autof
 depending on the available size of the region requested. The more accurate the saliency map, the better
 **salient-autofocus** will perform.
 
-![](./docs/images/salient7.jpg)
-![](./docs/images/salient8.jpg)
-![](./docs/images/salient9.jpg)
-![](./docs/images/salient10.jpg)
-![](./docs/images/salient11.jpg)
-![](./docs/images/salient6.jpg)
+![](https://github.com/asilvas/salient-maps/raw/master/docs/images/salient7.jpg)
+![](https://github.com/asilvas/salient-maps/raw/master/docs/images/salient8.jpg)
+![](https://github.com/asilvas/salient-maps/raw/master/docs/images/salient9.jpg)
+![](https://github.com/asilvas/salient-maps/raw/master/docs/images/salient10.jpg)
+![](https://github.com/asilvas/salient-maps/raw/master/docs/images/salient11.jpg)
+![](https://github.com/asilvas/salient-maps/raw/master/docs/images/salient6.jpg)
