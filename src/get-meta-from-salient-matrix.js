@@ -1,8 +1,9 @@
 const VERSION = 1;
 const GRAVITY_SORT_DISTANCE_WEIGHT = 1.0;
-const GRAVITY_SORT_SALIENT_WEIGHT = 1.75;
+const GRAVITY_SORT_SALIENT_WEIGHT = 1.0;
+const GRAVITY_TOP_BIAS = 1.3; // favor growth to top to create bias for people/heads and depth/distance
 
-function getMetaFromSalientMatrix(salientData) {
+function getMetaFromSalientMatrix(salientData, { gridRows=20, gridCols=20 } = {}) {
   const rows = salientData.length;
   const cols = salientData[0].length;
 
@@ -27,16 +28,12 @@ function getMetaFromSalientMatrix(salientData) {
   }
 
   // regardless of the size of the salient matrix, we want to focus on a fixed grid to perform gravitational saliency detection for the most accurate autofocus possible
-  const gridRows = 20;
-  const gridCols = 20;
   const salientGrid = downsize(salientData, { rows: gridRows, cols: gridCols });
 
   // filter out the center grid cell since it's our starting point
-  let gravityArr = matrixToGravityArray(salientGrid);
-
-  // first gravity point will be our center
-  let gravity = gravityArr.pop();
-  if (!gravity) {
+  const { gravityArr, topRow, topCol, topSum } = matrixToGravityArray(salientGrid);
+  
+  if (!gravityArr.length) {
     // if no gravity, return default center/center
     return {
       v: VERSION,
@@ -49,15 +46,25 @@ function getMetaFromSalientMatrix(salientData) {
   
   // re-sort based on both the saliency and distance from starting point
   const gravitySorter = (a, b) => {
-    const distanceA = Math.abs(a.row - gravity.row) + Math.abs(a.col - gravity.col);
-    const distanceB = Math.abs(b.row - gravity.row) + Math.abs(b.col - gravity.col);
-    const weightA = (distanceA * GRAVITY_SORT_DISTANCE_WEIGHT) + (a.sum * GRAVITY_SORT_SALIENT_WEIGHT);
-    const weightB = (distanceB * GRAVITY_SORT_DISTANCE_WEIGHT) + (b.sum * GRAVITY_SORT_SALIENT_WEIGHT);
+    if (a.row === topRow && a.col === topCol) return 1;
+    else if (b.row === topRow && b.col === topCol) return -1;
+
+    // greater the distance, the lower the value
+    const distanceA = 1 - (((Math.abs(a.row - topRow) / gridRows) + (Math.abs(a.col - topCol) / gridCols)) / 2);
+    const distanceB = 1 - (((Math.abs(b.row - topRow) / gridRows) + (Math.abs(b.col - topCol) / gridCols)) / 2);
+    // greater the sum, the greater the value
+    const sumA = a.sum / topSum;
+    const sumB = b.sum / topSum;
+    const weightA = (distanceA * GRAVITY_SORT_DISTANCE_WEIGHT) * (sumA * GRAVITY_SORT_SALIENT_WEIGHT) * (a.row < b.row ? GRAVITY_TOP_BIAS : 1);
+    const weightB = (distanceB * GRAVITY_SORT_DISTANCE_WEIGHT) * (sumB * GRAVITY_SORT_SALIENT_WEIGHT) * (b.row < a.row ? GRAVITY_TOP_BIAS : 1);
 
     return weightA < weightB ? -1 : weightA > weightB ? 1 : 0; // ASC
   };
   gravityArr.sort(gravitySorter);
 
+  // first gravity point will be our center
+  let gravity = gravityArr.pop();
+  
   let regionSum = gravity.sum;
   let left = gravity.col;
   let right = gravity.col;
@@ -151,16 +158,43 @@ function mapCells(fromRow, fromCol, fromRows, fromCols, toRows, toCols) {
 function matrixToGravityArray(mat) {
   const rows = mat.length;
   const cols = mat[0].length;
-  const gravityArr = new Array(rows * cols);
-  let row, col, i = 0;
+  const rowTip = rows - 1;
+  const colTip = cols - 1;
+  const gravityArr = [];
+
+  let row, col, sum, sum9box, topRow = 0, topCol = 0, topSum = 0;
   for (row = 0; row < rows; row++) {
     for (col = 0; col < cols; col++) {
-      gravityArr[i++] = { row, col, sum: mat[row][col] };
+      sum = mat[row][col];
+      if (!sum) continue;
+
+      // calc 9box sum to determine densest starting region
+      sum9box = sum;
+      if (col > 0 && row > 0) sum9box += mat[row-1][col-1];
+      if (col > 0) sum9box += mat[row][col-1];
+      if (row > 0) sum9box += mat[row-1][col];
+      if (col < colTip && row < rowTip) sum9box += mat[row+1][col+1];
+      if (col < colTip) sum9box += mat[row][col+1];
+      if (row < rowTip) sum9box += mat[row+1][col];
+      if (col < colTip && row > 0) sum9box += mat[row-1][col+1];
+      if (col > 0 && row < rowTip) sum9box += mat[row+1][col-1];
+
+      if (sum9box > topSum) {
+        topRow = row;
+        topCol = col;
+        topSum = sum9box;
+      }
+
+      gravityArr.push({ row, col, sum });
     }
   }
 
-  // no need for empty cells
-  return gravityArr.filter(({ sum }) => sum > 0).sort((a, b) => a.sum < b.sum ? -1 : a.sum > b.sum ? 1 : 0); // ASC
+  return {
+    gravityArr,
+    topRow,
+    topCol,
+    topSum
+  };
 }
 
 module.exports = getMetaFromSalientMatrix;

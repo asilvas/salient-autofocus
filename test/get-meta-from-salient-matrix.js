@@ -11,7 +11,7 @@ describe('#get-meta-from-salient-matrix', () => {
     getMetaFromSalientMatrix(salientData)
   */
 
-  let data;
+  let data, options;
 
   beforeEach(() => {
     data = [
@@ -19,10 +19,15 @@ describe('#get-meta-from-salient-matrix', () => {
       [0, 0.5, 0],
       [0, 0, 0.5]
     ];
+
+    options = {
+      gridRows: 20,
+      gridCols: 20
+    };
   });
 
   function main() {
-    return lib.getMetaFromSalientMatrix(data);
+    return lib.getMetaFromSalientMatrix(data, options);
   }
 
   it('defaults don\'t throw and return required fields', () => {
@@ -31,9 +36,9 @@ describe('#get-meta-from-salient-matrix', () => {
     expect(result).to.be.deep.equal({
       v: 1,
       c: { x: 0.5, y: 0.5 },
-      r25th: { l: 0.65, t: 0.65, w: 0.05, h: 0.05 },
-      r40th: { l: 0.35, t: 0.35, w: 0.35, h: 0.35 },
-      r50th: { l: 0.35, t: 0.35, w: 0.35, h: 0.35 },
+      r25th: { l: 0, t: 0, w: 0.05, h: 0.05 },
+      r40th: { l: 0, t: 0, w: 0.4, h: 0.4 },
+      r50th: { l: 0, t: 0, w: 0.4, h: 0.4 },
       r75th: { l: 0, t: 0, w: 0.7, h: 0.7 },
       r90th: { l: 0, t: 0, w: 0.7, h: 0.7 }
     });
