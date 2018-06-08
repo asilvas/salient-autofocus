@@ -1,4 +1,5 @@
 const assert = require('assert');
+const BezierEasing = require('bezier-easing');
 
 const VERSION = 2;
 const GRID_ROWS = 15;
@@ -6,55 +7,18 @@ const GRID_COLS = 15;
 const GRAVITY_BIAS_SALIENCY = {
   MIN: 0,
   MAX: 1,
-  SCALAR: createScalar(expInOut) // makes a considerable difference in the quality of saliency
+  SCALAR: BezierEasing(.04,.37,0,1) // see http://cubic-bezier.com/#.04,.37,0,1
 };
 const GRAVITY_BIAS_CENTER = { // center bias makes a big difference, combined with saliency makes for higher confidence truth
   MIN: 0.1,
-  MAX: 1.0
+  MAX: 1.0,
+  SCALAR: BezierEasing(.4,.41,.65,.1) // see http://cubic-bezier.com/#.4,.41,.65,.1
 };
 const GRAVITY_BIAS_TOP = { // helps with z-depth by a minor amount, but hacky solution
   MIN: 1.0,
-  MAX: 1.1
+  MAX: 1.1,
+  SCALAR: BezierEasing(.2,.21,.95,.92) // see http://cubic-bezier.com/#.2,.21,.95,.92
 };
-
-function createScalar(alg, items = 200) { // seeing value up to 200 buckets -- direct correlation with number of rows
-  const algArr = [];
-  for (let i = 0; i < items; i++) {
-    algArr[i] = alg(i + 1, items);
-  }
-  const min = algArr[0];
-  const max = algArr[items - 1];
-
-  // map to 0-1
-  return algArr.map(a => ((a - min) / max));
-}
-
-function expIn(t) {
-  return Math.pow(2, 10 * t - 10);
-}
-
-function expOut(t) {
-  return 1 - Math.pow(2, -10 * t);
-}
-
-function expInOut(t) {
-  return ((t *= 2) <= 1 ? Math.pow(2, 10 * t - 10) : 2 - Math.pow(2, 10 - 10 * t)) / 2;
-}
-
-var pi = Math.PI,
-    halfPi = pi / 2;
-
-function sinIn(t, mx) {
-  return 1 - Math.cos((t/mx) * halfPi);
-}
-
-function sinOut(t, mx) {
-  return Math.sin((t/mx) * halfPi);
-}
-
-function sinInOut(t, mx) {
-  return (1 - Math.cos(pi * (t/mx))) / 2;
-}
 
 function getComputeModOptions({ valueMin, valueMax, biasMin, biasMax, fn, scalar }) {
   assert(valueMin !== undefined, 'valueMin required');
@@ -87,8 +51,7 @@ function computeMod(cell, { valueMin, valueMax, valueRange, biasMin, biasMax, bi
   }  
 
   if (scalar) { // apply scalar algorithm if linear is not desired
-    factor = scalar[Math.floor(scalar.length * factor)];
-    //console.log('scalar:', factor);
+    factor = scalar(factor);
   }
 
   // compute final mod
@@ -178,7 +141,6 @@ function getMetaFromSalientMatrix(salientData, { gridRows=GRID_ROWS, gridCols=GR
     const topA = computeMod(a, topModOptions);
     const topB = computeMod(b, topModOptions);
     
-    //console.log('saliency:', saliencyA, ', center:', centerA);
     const weightA = saliencyA * centerA * topA;
     const weightB = saliencyB * centerB * topB;
 
@@ -202,7 +164,7 @@ function getMetaFromSalientMatrix(salientData, { gridRows=GRID_ROWS, gridCols=GR
   
     regionRatio = regionSum / sum;
     region = { l: +(left/gridCols).toFixed(4), t: +(top/gridRows).toFixed(4), w: +(width/gridCols).toFixed(4), h: +(height/gridRows).toFixed(4) };
-    //console.log('region:', region);
+
     if (!r25th && regionRatio >= 0.25) r25th = region;
     if (!r40th && regionRatio >= 0.4) r40th = region;
     if (!r50th && regionRatio >= 0.5) r50th = region;  

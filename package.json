@@ -48,5 +48,8 @@
     "should": "^13.2.1",
     "sinon": "^4.5.0",
     "sinon-chai": "^3.0.0"
+  },
+  "dependencies": {
+    "bezier-easing": "^2.1.0"
   }
 }
