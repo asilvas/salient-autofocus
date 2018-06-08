@@ -1,11 +1,107 @@
-const VERSION = 1;
-const GRAVITY_SORT_DISTANCE_WEIGHT = 1.0;
-const GRAVITY_SORT_SALIENT_WEIGHT = 1.0;
-const GRAVITY_TOP_BIAS = 1.3; // favor growth to top to create bias for people/heads and depth/distance
+const assert = require('assert');
 
-function getMetaFromSalientMatrix(salientData, { gridRows=20, gridCols=20 } = {}) {
+const VERSION = 2;
+const GRID_ROWS = 15;
+const GRID_COLS = 15;
+const GRAVITY_BIAS_SALIENCY = {
+  MIN: 0,
+  MAX: 1,
+  SCALAR: createScalar(expInOut) // makes a considerable difference in the quality of saliency
+};
+const GRAVITY_BIAS_CENTER = { // center bias makes a big difference, combined with saliency makes for higher confidence truth
+  MIN: 0.1,
+  MAX: 1.0
+};
+const GRAVITY_BIAS_TOP = { // helps with z-depth by a minor amount, but hacky solution
+  MIN: 1.0,
+  MAX: 1.1
+};
+
+function createScalar(alg, items = 200) { // seeing value up to 200 buckets -- direct correlation with number of rows
+  const algArr = [];
+  for (let i = 0; i < items; i++) {
+    algArr[i] = alg(i + 1, items);
+  }
+  const min = algArr[0];
+  const max = algArr[items - 1];
+
+  // map to 0-1
+  return algArr.map(a => ((a - min) / max));
+}
+
+function expIn(t) {
+  return Math.pow(2, 10 * t - 10);
+}
+
+function expOut(t) {
+  return 1 - Math.pow(2, -10 * t);
+}
+
+function expInOut(t) {
+  return ((t *= 2) <= 1 ? Math.pow(2, 10 * t - 10) : 2 - Math.pow(2, 10 - 10 * t)) / 2;
+}
+
+var pi = Math.PI,
+    halfPi = pi / 2;
+
+function sinIn(t, mx) {
+  return 1 - Math.cos((t/mx) * halfPi);
+}
+
+function sinOut(t, mx) {
+  return Math.sin((t/mx) * halfPi);
+}
+
+function sinInOut(t, mx) {
+  return (1 - Math.cos(pi * (t/mx))) / 2;
+}
+
+function getComputeModOptions({ valueMin, valueMax, biasMin, biasMax, fn, scalar }) {
+  assert(valueMin !== undefined, 'valueMin required');
+  assert(valueMax !== undefined, 'valueMax required');
+  assert(biasMin !== undefined, 'biasMin required');
+  assert(biasMax !== undefined, 'biasMax required');
+  assert(fn !== undefined, 'fn required');
+
+  return {
+    valueMin,
+    valueMax,
+    valueRange: Math.abs(valueMax - valueMin),
+    biasMin,
+    biasMax,
+    biasRange: biasMax - biasMin,
+    fn,
+    scalar
+  };
+}
+
+function computeMod(cell, { valueMin, valueMax, valueRange, biasMin, biasMax, biasRange, fn, scalar }) {
+  const val = fn(cell);
+
+  let factor;
+
+  if (valueMin < valueMax) { // ex: 0 to 100
+    factor = ((val - valueMin) / valueRange);    
+  } else { // ex: 100 to 0
+    factor = 1 - ((val - valueMax) / valueRange);    
+  }  
+
+  if (scalar) { // apply scalar algorithm if linear is not desired
+    factor = scalar[Math.floor(scalar.length * factor)];
+    //console.log('scalar:', factor);
+  }
+
+  // compute final mod
+  return biasMin + (biasRange * factor);
+}
+
+function getMetaFromSalientMatrix(salientData, { gridRows=GRID_ROWS, gridCols=GRID_COLS } = {}) {
   const rows = salientData.length;
   const cols = salientData[0].length;
+
+  // middle should be float for accuracy, do not round
+  const middleRow = gridRows / 2;
+  const middleCol = gridCols / 2;
 
   let row, col, x, y, xDelta, yDelta, cell, sum, weight;
   let center = [0.5, 0.5]; // [x,y]
@@ -31,7 +127,7 @@ function getMetaFromSalientMatrix(salientData, { gridRows=20, gridCols=20 } = {}
   const salientGrid = downsize(salientData, { rows: gridRows, cols: gridCols });
 
   // filter out the center grid cell since it's our starting point
-  const { gravityArr, topRow, topCol, topSum } = matrixToGravityArray(salientGrid);
+  const { gravityArr, topSum } = matrixToGravityArray(salientGrid);
   
   if (!gravityArr.length) {
     // if no gravity, return default center/center
@@ -43,20 +139,48 @@ function getMetaFromSalientMatrix(salientData, { gridRows=20, gridCols=20 } = {}
       }
     };
   }
+
+  const saliencyModOptions = getComputeModOptions({
+    valueMin: 0,
+    valueMax: topSum,
+    biasMin: GRAVITY_BIAS_SALIENCY.MIN,
+    biasMax: GRAVITY_BIAS_SALIENCY.MAX,
+    fn: cell => cell.sum,
+    scalar: GRAVITY_BIAS_SALIENCY.SCALAR
+  });
+
+  const centerModOptions = getComputeModOptions({
+    valueMin: 1,
+    valueMax: 0,
+    biasMin: GRAVITY_BIAS_CENTER.MIN,
+    biasMax: GRAVITY_BIAS_CENTER.MAX,
+    fn: cell => (((Math.abs(cell.row - middleRow) / middleRow) + (Math.abs(cell.col - middleCol) / middleCol)) / 2),
+    scalar: GRAVITY_BIAS_CENTER.SCALAR
+  });
+
+  const topModOptions = getComputeModOptions({
+    valueMin: gridRows,
+    valueMax: 0,
+    biasMin: GRAVITY_BIAS_TOP.MIN,
+    biasMax: GRAVITY_BIAS_TOP.MAX,
+    fn: cell => cell.row,
+    scalar: GRAVITY_BIAS_TOP.SCALAR
+  });
   
   // re-sort based on both the saliency and distance from starting point
   const gravitySorter = (a, b) => {
-    if (a.row === topRow && a.col === topCol) return 1;
-    else if (b.row === topRow && b.col === topCol) return -1;
+    const saliencyA = computeMod(a, saliencyModOptions);
+    const saliencyB = computeMod(b, saliencyModOptions);
 
-    // greater the distance, the lower the value
-    const distanceA = 1 - (((Math.abs(a.row - topRow) / gridRows) + (Math.abs(a.col - topCol) / gridCols)) / 2);
-    const distanceB = 1 - (((Math.abs(b.row - topRow) / gridRows) + (Math.abs(b.col - topCol) / gridCols)) / 2);
-    // greater the sum, the greater the value
-    const sumA = a.sum / topSum;
-    const sumB = b.sum / topSum;
-    const weightA = (distanceA * GRAVITY_SORT_DISTANCE_WEIGHT) * (sumA * GRAVITY_SORT_SALIENT_WEIGHT) * (a.row < b.row ? GRAVITY_TOP_BIAS : 1);
-    const weightB = (distanceB * GRAVITY_SORT_DISTANCE_WEIGHT) * (sumB * GRAVITY_SORT_SALIENT_WEIGHT) * (b.row < a.row ? GRAVITY_TOP_BIAS : 1);
+    const centerA = computeMod(a, centerModOptions);
+    const centerB = computeMod(b, centerModOptions);
+
+    const topA = computeMod(a, topModOptions);
+    const topB = computeMod(b, topModOptions);
+    
+    //console.log('saliency:', saliencyA, ', center:', centerA);
+    const weightA = saliencyA * centerA * topA;
+    const weightB = saliencyB * centerB * topB;
 
     return weightA < weightB ? -1 : weightA > weightB ? 1 : 0; // ASC
   };
@@ -78,6 +202,7 @@ function getMetaFromSalientMatrix(salientData, { gridRows=20, gridCols=20 } = {}
   
     regionRatio = regionSum / sum;
     region = { l: +(left/gridCols).toFixed(4), t: +(top/gridRows).toFixed(4), w: +(width/gridCols).toFixed(4), h: +(height/gridRows).toFixed(4) };
+    //console.log('region:', region);
     if (!r25th && regionRatio >= 0.25) r25th = region;
     if (!r40th && regionRatio >= 0.4) r40th = region;
     if (!r50th && regionRatio >= 0.5) r50th = region;  
@@ -162,28 +287,13 @@ function matrixToGravityArray(mat) {
   const colTip = cols - 1;
   const gravityArr = [];
 
-  let row, col, sum, sum9box, topRow = 0, topCol = 0, topSum = 0;
+  let row, col, sum, topSum = 0;
   for (row = 0; row < rows; row++) {
     for (col = 0; col < cols; col++) {
       sum = mat[row][col];
       if (!sum) continue;
 
-      // calc 9box sum to determine densest starting region
-      sum9box = sum;
-      if (col > 0 && row > 0) sum9box += mat[row-1][col-1];
-      if (col > 0) sum9box += mat[row][col-1];
-      if (row > 0) sum9box += mat[row-1][col];
-      if (col < colTip && row < rowTip) sum9box += mat[row+1][col+1];
-      if (col < colTip) sum9box += mat[row][col+1];
-      if (row < rowTip) sum9box += mat[row+1][col];
-      if (col < colTip && row > 0) sum9box += mat[row-1][col+1];
-      if (col > 0 && row < rowTip) sum9box += mat[row+1][col-1];
-
-      if (sum9box > topSum) {
-        topRow = row;
-        topCol = col;
-        topSum = sum9box;
-      }
+      topSum = Math.max(topSum, sum);
 
       gravityArr.push({ row, col, sum });
     }
@@ -191,8 +301,6 @@ function matrixToGravityArray(mat) {
 
   return {
     gravityArr,
-    topRow,
-    topCol,
     topSum
   };
 }
