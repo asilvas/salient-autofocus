@@ -169,8 +169,8 @@ describe('#get-region-from-meta', () => {
       expect(result).to.deep.equal({
         "bottom": 533,
         "height": 300,
-        "left": 363,
-        "right": 662,
+        "left": 362,
+        "right": 661,
         "top": 234,
         "width": 300
       });
@@ -188,11 +188,11 @@ describe('#get-region-from-meta', () => {
   
       expect(err).to.not.exist;
       expect(result).to.deep.equal({
-        "bottom": 484,
+        "bottom": 483,
         "height": 200,
         "left": 412,
         "right": 611,
-        "top": 285,
+        "top": 284,
         "width": 200
       });
     });

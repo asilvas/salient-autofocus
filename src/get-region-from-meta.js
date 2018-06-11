@@ -7,22 +7,42 @@ function getRegionFromMeta({ v, /*c, */r25th, r40th, r50th, r75th, r90th } = {},
   if (!regionWidth) throw new Error('`regionWidth` required');
   if (!regionHeight) throw new Error('`regionHeight` required');
 
-  let region;
+  const regions = [];
 
-  if (r90th) region = autoFocusFromSaliency(r90th, { imageWidth, imageHeight, regionWidth, regionHeight, bestEffort: false });
-  if (region) return region; // perfect match for 90th percentile!
-  if (r75th) region = autoFocusFromSaliency(r75th, { imageWidth, imageHeight, regionWidth, regionHeight, bestEffort: false });
-  if (region) return region; // perfect match for 75th percentile!
-  if (r50th) region = autoFocusFromSaliency(r50th, { imageWidth, imageHeight, regionWidth, regionHeight, bestEffort: false });
-  if (region) return region; // perfect match for 50th percentile!
-  if (r40th) region = autoFocusFromSaliency(r40th, { imageWidth, imageHeight, regionWidth, regionHeight, bestEffort: false });
-  if (region) return region; // perfect match for 50th percentile!
-  if (r25th) region = autoFocusFromSaliency(r25th, { imageWidth, imageHeight, regionWidth, regionHeight, bestEffort: true });
-  if (region) return region; // region 25th percentile regardless if perfect match or not, we used our best effort
+  if (r90th) regions.push(autoFocusFromSaliency(r90th, { imageWidth, imageHeight, regionWidth, regionHeight, bestEffort: true }));
+  if (r75th) regions.push(autoFocusFromSaliency(r75th, { imageWidth, imageHeight, regionWidth, regionHeight, bestEffort: true }));
+  if (r50th) regions.push(autoFocusFromSaliency(r50th, { imageWidth, imageHeight, regionWidth, regionHeight, bestEffort: true }));
+  if (r40th) regions.push(autoFocusFromSaliency(r40th, { imageWidth, imageHeight, regionWidth, regionHeight, bestEffort: true }));
+  if (r25th) regions.push(autoFocusFromSaliency(r25th, { imageWidth, imageHeight, regionWidth, regionHeight, bestEffort: true }));
 
-  // if we get this far, there is no saliency, and we simply want to default to center/center
-  return autoFocusFromSaliency({ l: 0.5, t: 0.5, w: 0, h: 0 }, { imageWidth, imageHeight, regionWidth, regionHeight, bestEffort: true });
+  if (!regions.length) autoFocusFromSaliency({ l: 0.5, t: 0.5, w: 0, h: 0 }, { imageWidth, imageHeight, regionWidth, regionHeight, bestEffort: true });
+
+  const regionSum = regions.reduce((state, r) => {
+    return {
+      left: state.left + r.left,
+      top: state.top + r.top
+    }
+  }, { left: 0, top: 0 });
+
+  const regionMean = {
+    left: Math.round(regionSum.left / regions.length),
+    top: Math.round(regionSum.top / regions.length),
+    width: regions[0].width,
+    height: regions[0].height
+  };
+
+  regionMean.right = regionMean.left + regionMean.width - 1;
+  regionMean.bottom = regionMean.top + regionMean.height - 1;
+/*
+  if (regionMean.right >= imageWidth) {
+    regionMean.left -= (regionMean.right - imageWidth);
+    regionMean.right = regionMean.left + regionMean.width - 1;
+  }
+*/
+  return regionMean;
 }
+
+
 
 function autoFocusFromSaliency({ l, t, w, h }, { imageWidth, imageHeight, regionWidth, regionHeight, bestEffort }) {
   let finalRegionWidth = regionWidth;
