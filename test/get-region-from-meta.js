@@ -15,7 +15,7 @@ describe('#get-region-from-meta', () => {
 
   beforeEach(() => {
     meta = {
-      v: 1,
+      v: lib.constants.VERSION,
       c: [0.5, 0.5],
       r25th: { l: 0.45, t: 0.45, w: 0.1, h: 0.1 },
       r50th: { l: 0.40, t: 0.40, w: 0.2, h: 0.2 },
@@ -88,7 +88,7 @@ describe('#get-region-from-meta', () => {
 
   it('shift if region exceeds image size', () => {
     meta = {
-      v: 1,
+      v: lib.constants.VERSION,
       c: [0.5, 0.5],
       r25th: { l: 0.95, t: 0.95, w: 0.1, h: 0.1 },
       r50th: { l: 0.95, t: 0.95, w: 0.2, h: 0.2 },
@@ -211,7 +211,7 @@ describe('#get-region-from-meta', () => {
       }
   
       expect(err).to.exist;
-      expect(err.message).to.be.equal('v:1 required');
+      expect(err.message).to.be.equal(`v:${lib.constants.VERSION} required`);
     });
 
     it('v === 1', () => {
@@ -224,7 +224,7 @@ describe('#get-region-from-meta', () => {
       }
   
       expect(err).to.exist;
-      expect(err.message).to.be.equal('v:1 required');
+      expect(err.message).to.be.equal(`v:${lib.constants.VERSION} required`);
     });
 
   });

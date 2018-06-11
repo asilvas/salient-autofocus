@@ -1,5 +1,7 @@
+const constants = require('./constants');
+
 function getRegionFromMeta({ v, /*c, */r25th, r40th, r50th, r75th, r90th } = {}, { imageWidth, imageHeight, regionWidth, regionHeight }) {
-  if (v !== 2) throw new Error('v:2 required');
+  if (v !== constants.VERSION) throw new Error(`v:${constants.VERSION} required`);
   if (!imageWidth) throw new Error('`imageWidth` required');
   if (!imageHeight) throw new Error('`imageHeight` required');
   if (!regionWidth) throw new Error('`regionWidth` required');

@@ -1,24 +1,5 @@
 const assert = require('assert');
-const BezierEasing = require('bezier-easing');
-
-const VERSION = 2;
-const GRID_ROWS = 15;
-const GRID_COLS = 15;
-const GRAVITY_BIAS_SALIENCY = {
-  MIN: 0,
-  MAX: 1,
-  SCALAR: BezierEasing(.04,.37,0,1) // see http://cubic-bezier.com/#.04,.37,0,1
-};
-const GRAVITY_BIAS_CENTER = { // center bias makes a big difference, combined with saliency makes for higher confidence truth
-  MIN: 0.1,
-  MAX: 1.0,
-  SCALAR: BezierEasing(.4,.41,.65,.1) // see http://cubic-bezier.com/#.4,.41,.65,.1
-};
-const GRAVITY_BIAS_TOP = { // helps with z-depth by a minor amount, but hacky solution
-  MIN: 1.0,
-  MAX: 1.1,
-  SCALAR: BezierEasing(.2,.21,.95,.92) // see http://cubic-bezier.com/#.2,.21,.95,.92
-};
+const constants = require('./constants');
 
 function getComputeModOptions({ valueMin, valueMax, biasMin, biasMax, fn, scalar }) {
   assert(valueMin !== undefined, 'valueMin required');
@@ -58,7 +39,7 @@ function computeMod(cell, { valueMin, valueMax, valueRange, biasMin, biasMax, bi
   return biasMin + (biasRange * factor);
 }
 
-function getMetaFromSalientMatrix(salientData, { gridRows=GRID_ROWS, gridCols=GRID_COLS } = {}) {
+function getMetaFromSalientMatrix(salientData, { gridRows=constants.GRID_ROWS, gridCols=constants.GRID_COLS } = {}) {
   const rows = salientData.length;
   const cols = salientData[0].length;
 
@@ -95,7 +76,7 @@ function getMetaFromSalientMatrix(salientData, { gridRows=GRID_ROWS, gridCols=GR
   if (!gravityArr.length) {
     // if no gravity, return default center/center
     return {
-      v: VERSION,
+      v: constants.VERSION,
       c: {
         x: 0.5,
         y: 0.5
@@ -106,28 +87,28 @@ function getMetaFromSalientMatrix(salientData, { gridRows=GRID_ROWS, gridCols=GR
   const saliencyModOptions = getComputeModOptions({
     valueMin: 0,
     valueMax: topSum,
-    biasMin: GRAVITY_BIAS_SALIENCY.MIN,
-    biasMax: GRAVITY_BIAS_SALIENCY.MAX,
+    biasMin: constants.GRAVITY_BIAS_SALIENCY.MIN,
+    biasMax: constants.GRAVITY_BIAS_SALIENCY.MAX,
     fn: cell => cell.sum,
-    scalar: GRAVITY_BIAS_SALIENCY.SCALAR
+    scalar: constants.GRAVITY_BIAS_SALIENCY.SCALAR
   });
 
   const centerModOptions = getComputeModOptions({
     valueMin: 1,
     valueMax: 0,
-    biasMin: GRAVITY_BIAS_CENTER.MIN,
-    biasMax: GRAVITY_BIAS_CENTER.MAX,
+    biasMin: constants.GRAVITY_BIAS_CENTER.MIN,
+    biasMax: constants.GRAVITY_BIAS_CENTER.MAX,
     fn: cell => (((Math.abs(cell.row - middleRow) / middleRow) + (Math.abs(cell.col - middleCol) / middleCol)) / 2),
-    scalar: GRAVITY_BIAS_CENTER.SCALAR
+    scalar: constants.GRAVITY_BIAS_CENTER.SCALAR
   });
 
   const topModOptions = getComputeModOptions({
     valueMin: gridRows,
     valueMax: 0,
-    biasMin: GRAVITY_BIAS_TOP.MIN,
-    biasMax: GRAVITY_BIAS_TOP.MAX,
+    biasMin: constants.GRAVITY_BIAS_TOP.MIN,
+    biasMax: constants.GRAVITY_BIAS_TOP.MAX,
     fn: cell => cell.row,
-    scalar: GRAVITY_BIAS_TOP.SCALAR
+    scalar: constants.GRAVITY_BIAS_TOP.SCALAR
   });
   
   // re-sort based on both the saliency and distance from starting point
@@ -199,7 +180,7 @@ function getMetaFromSalientMatrix(salientData, { gridRows=GRID_ROWS, gridCols=GR
   } while (!r90th && gravity);
 
   return {
-    v: VERSION,
+    v: constants.VERSION,
     c: {
       x: +(center[0]).toFixed(4),
       y: +(center[1]).toFixed(4)

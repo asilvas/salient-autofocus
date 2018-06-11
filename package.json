@@ -1,6 +1,6 @@
 {
   "name": "salient-autofocus",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Auto-focus capabilities based on saliency maps",
   "main": "src/index.js",
   "scripts": {

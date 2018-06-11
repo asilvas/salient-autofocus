@@ -34,11 +34,11 @@ describe('#get-meta-from-salient-matrix', () => {
     const result = main();
 
     expect(result).to.be.deep.equal({
-      v: 1,
+      v: lib.constants.VERSION,
       c: { x: 0.5, y: 0.5 },
-      r25th: { l: 0, t: 0, w: 0.05, h: 0.05 },
-      r40th: { l: 0, t: 0, w: 0.4, h: 0.4 },
-      r50th: { l: 0, t: 0, w: 0.4, h: 0.4 },
+      r25th: { l: 0.35, t: 0.35, w: 0.05, h: 0.05 },
+      r40th: { l: 0.35, t: 0.35, w: 0.35, h: 0.35 },
+      r50th: { l: 0.35, t: 0.35, w: 0.35, h: 0.35 },
       r75th: { l: 0, t: 0, w: 0.7, h: 0.7 },
       r90th: { l: 0, t: 0, w: 0.7, h: 0.7 }
     });
