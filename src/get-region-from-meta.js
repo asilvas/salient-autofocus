@@ -33,12 +33,7 @@ function getRegionFromMeta({ v, /*c, */r25th, r40th, r50th, r75th, r90th } = {},
 
   regionMean.right = regionMean.left + regionMean.width - 1;
   regionMean.bottom = regionMean.top + regionMean.height - 1;
-/*
-  if (regionMean.right >= imageWidth) {
-    regionMean.left -= (regionMean.right - imageWidth);
-    regionMean.right = regionMean.left + regionMean.width - 1;
-  }
-*/
+
   return regionMean;
 }
 
