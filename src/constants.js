@@ -3,8 +3,8 @@ const BezierEasing = require('bezier-easing');
 module.exports = {
   VERSION: 2,
 
-  GRID_ROWS: 15,
-  GRID_COLS: 15,
+  GRID_ROWS: 40,
+  GRID_COLS: 40,
 
   GRAVITY_BIAS_SALIENCY: {
     MIN: 0,

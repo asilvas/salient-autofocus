@@ -15,7 +15,7 @@ function getRegionFromMeta({ v, /*c, */r25th, r40th, r50th, r75th, r90th } = {},
   if (r40th) regions.push(autoFocusFromSaliency(r40th, { imageWidth, imageHeight, regionWidth, regionHeight, bestEffort: true }));
   if (r25th) regions.push(autoFocusFromSaliency(r25th, { imageWidth, imageHeight, regionWidth, regionHeight, bestEffort: true }));
 
-  if (!regions.length) autoFocusFromSaliency({ l: 0.5, t: 0.5, w: 0, h: 0 }, { imageWidth, imageHeight, regionWidth, regionHeight, bestEffort: true });
+  if (!regions.length) return autoFocusFromSaliency({ l: 0.5, t: 0.5, w: 0, h: 0 }, { imageWidth, imageHeight, regionWidth, regionHeight, bestEffort: true });
 
   const centerSum = regions.reduce((state, r) => {
     return {
@@ -39,11 +39,21 @@ function getRegionFromMeta({ v, /*c, */r25th, r40th, r50th, r75th, r90th } = {},
   regionMean.right = regionMean.left + regionMean.width - 1;
   regionMean.bottom = regionMean.top + regionMean.height - 1;
 
-
   return regionMean;
 }
 
+function getPx({ l, t, w, h }, { imageWidth, imageHeight, regionWidth, regionHeight, bestEffort }) {
+  const left = Math.round(imageWidth * l);
+  const top = Math.round(imageHeight * t);
+  const width = Math.round(imageWidth * w);
+  const height = Math.round(imageHeight * h);
+  const right = left + width - 1;
+  const bottom = top + height - 1;
+  const x = left + Math.round(width / 2);
+  const y = top + Math.round(height / 2);
 
+  return { left, top, width, height, right, bottom, x, y };
+}
 
 function autoFocusFromSaliency({ l, t, w, h }, { imageWidth, imageHeight, regionWidth, regionHeight, bestEffort }) {
   let finalRegionWidth = regionWidth;
@@ -62,18 +72,11 @@ function autoFocusFromSaliency({ l, t, w, h }, { imageWidth, imageHeight, region
     finalRegionWidth = Math.round(finalRegionHeight * aspectX);
   }
 
-  const leftPx = Math.round(imageWidth * l);
-  const topPx = Math.round(imageHeight * t);
-  const widthPx = Math.round(imageWidth * w);
-  const heightPx = Math.round(imageHeight * h);
-  const rightPx = leftPx + widthPx;
-  const bottomPx = topPx + heightPx;
-  const centerX = leftPx + Math.round(widthPx / 2);
-  const centerY = topPx + Math.round(heightPx / 2);
+  const px = getPx({ l, t, w, h }, { imageWidth, imageHeight, regionWidth, regionHeight, bestEffort });
 
   // place region in center of saliency
-  let left = Math.max(centerX - Math.round(finalRegionWidth / 2), 0); // do not allow negative
-  let top = Math.max(centerY - Math.round(finalRegionHeight / 2), 0); // do not allow negative
+  let left = Math.max(px.x - Math.round(finalRegionWidth / 2), 0); // do not allow negative
+  let top = Math.max(px.y - Math.round(finalRegionHeight / 2), 0); // do not allow negative
   let right = left + finalRegionWidth - 1;
   if (right >= imageWidth) {
     right = imageWidth - 1;
@@ -90,7 +93,7 @@ function autoFocusFromSaliency({ l, t, w, h }, { imageWidth, imageHeight, region
   const height = bottom - top + 1; // calc final height
 
   if (!bestEffort) { // if best effort isn't good enough, only return success if we met all region requirements
-    if (left > leftPx || top > topPx || right < rightPx || bottom < bottomPx) {
+    if (left > px.left || top > px.top || right < px.right || bottom < px.bottom) {
       return null;
     }
   }
