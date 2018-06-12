@@ -17,22 +17,28 @@ function getRegionFromMeta({ v, /*c, */r25th, r40th, r50th, r75th, r90th } = {},
 
   if (!regions.length) autoFocusFromSaliency({ l: 0.5, t: 0.5, w: 0, h: 0 }, { imageWidth, imageHeight, regionWidth, regionHeight, bestEffort: true });
 
-  const regionSum = regions.reduce((state, r) => {
+  const centerSum = regions.reduce((state, r) => {
     return {
-      left: state.left + r.left,
-      top: state.top + r.top
+      x: state.x + (r.left + (r.width / 2)),
+      y: state.y + (r.top + (r.height / 2))
     }
-  }, { left: 0, top: 0 });
+  }, { x: 0, y: 0 });
+
+  const rWidth = regions[0].width;  
+  const rHeight = regions[0].height;
+  const rWidthHalf = Math.round(rWidth / 2);
+  const rHeightHalf = Math.round(rHeight / 2);
 
   const regionMean = {
-    left: Math.round(regionSum.left / regions.length),
-    top: Math.round(regionSum.top / regions.length),
-    width: regions[0].width,
-    height: regions[0].height
+    left: Math.round(centerSum.x / regions.length) - rWidthHalf,
+    top: Math.round(centerSum.y / regions.length) - rHeightHalf,
+    width: rWidth,
+    height: rHeight
   };
 
   regionMean.right = regionMean.left + regionMean.width - 1;
   regionMean.bottom = regionMean.top + regionMean.height - 1;
+
 
   return regionMean;
 }
